@@ -1,114 +1,164 @@
-//This code is based on starter code provided by Elegoo
-//www.elegoo.com
+// This code is based on starter code provided by Elegoo and modifications made by Mark Bedillion
 
-#include <Servo.h>  //servo library
-Servo myservo;      // create servo object to control servo
+// Servo library
+#include <Servo.h>
 
-//Define all of the pins used.  These are NOT up to us, but rather what Elegoo decided.  Don't change.
-int Echo = 12;  
-int Trig = 13; 
+// Return value for get_line_state()
+enum LineState {
+  LINE_STATE_NONE, // no line detected
+  LINE_STATE_LEFT, // the line is to the left
+  LINE_STATE_CENTER, // the line is centered, or it's on a solid black surface
+  LINE_STATE_RIGHT // the line is to the right
+};
 
-#define ENA 5
-#define ENB 6
-#define DIRA 8
-#define DIRB 7
-#define EN 3
-//Line follower pins
-#define LR A2
-#define LM A1
-#define LL A0
+// Ultrasonic pins
+#define ULTRASONIC_TRIG 13
+#define ULTRASONIC_ECHO 12
+#define SERVO_PIN 10 // Ultrasonic pan servo
 
-/******************************Helper functions*********************************************/
-//Begin helper functions.  You should CALL these functions, but do not change them.  You DO NOT need to worry about the details inside the functions.
+// Motor pins
+#define SPEED_L 6
+#define SPEED_R 5
+#define DIR_L 8
+#define DIR_R 7
+#define ENABLE 3 // Motor enable - must be HIGH for any motors to run
 
-//The functions below set the left and right motor speeds and directions.
-//Speed is an integer from 0 - 255 that determines the motor speed.
-//Direction is 1 for forward and 0 for backwards.
-void leftMotor(int lspeed, bool ldirection){
-  analogWrite(ENA, lspeed);
-  if (ldirection)
-  {
-    digitalWrite(DIRA, HIGH);
+// Line follower pins
+#define LINE_L A2
+#define LINE_M A1
+#define LINE_R A0
+
+// Servo object for the ultrasonic servo
+Servo ultrasonic_servo;
+
+// Main motor speed function: input values on range -1.0 to 1.0 converted to correct output signals
+void set_speeds(float speed_l, float speed_r) {
+  _motor_speed(SPEED_L, DIR_L, speed_l);
+  _motor_speed(SPEED_R, DIR_R, speed_r);
+}
+// Helper function to avoid code repetition
+void _motor_speed(int speed_pin, int dir_pin, float speed) {
+  if (speed >= 0) {
+    analogWrite(speed_pin, speed*255.0);
+    digitalWrite(dir_pin, HIGH); // HIGH is forward
   }
-  else
-  {
-    digitalWrite(DIRA, LOW);
+  else {
+    analogWrite(speed_pin, -speed*255.0);
+    digitalWrite(dir_pin, LOW);
   }
 }
-void rightMotor(int rspeed, bool rdirection){
-  analogWrite(ENB, rspeed);
-  if (rdirection)
-  {
-    digitalWrite(DIRB, HIGH);
-  }
-  else
-  {
-    digitalWrite(DIRB, LOW);
-  }
-}
-//  The function below stops.  This is the same as just setting motor speeds to zero - not really necessary
-void stop() {
-  digitalWrite(ENA, LOW);
-  digitalWrite(ENB, LOW);
-} 
+// Shorthand to stop motors
+#define stop() set_speeds(0.0, 0.0)
 
-//Ultrasonic distance measurement helper function - returns a float with distance in cm
-float Distance_test() {
-  digitalWrite(Trig, LOW);   
+// Returns distance measured by ultrasonic in cm
+float get_distance() {
+  digitalWrite(ULTRASONIC_TRIG, LOW);
   delayMicroseconds(2);
-  digitalWrite(Trig, HIGH);  
+  digitalWrite(ULTRASONIC_TRIG, HIGH);
   delayMicroseconds(10);
-  digitalWrite(Trig, LOW);   
-  float Fdistance = pulseIn(Echo, HIGH);  
-  Fdistance= Fdistance / 58.0;       
-  return Fdistance;
-}  
+  digitalWrite(ULTRASONIC_TRIG, LOW);
+  return pulseIn(ULTRASONIC_ECHO, HIGH) / 58.0;
+}
 
-/*************************Setup*************************************************/
-//You shouldn't need to touch this - it is merely setting up pins and stopping the motors at the start
-void setup() { 
-  myservo.attach(10,500,2400);  // attach servo on pin 10 to servo object
-  Serial.begin(9600);     //For debugging
-  pinMode(Echo, INPUT);    
-  pinMode(Trig, OUTPUT);  
-  pinMode(DIRA, OUTPUT);
-  pinMode(DIRB, OUTPUT);
-  pinMode(ENA, OUTPUT);
-  pinMode(ENB, OUTPUT);
-  pinMode(EN,OUTPUT);
-  digitalWrite(EN,HIGH);
+#define LINE_THRESHOLD 200 // Tuning value: line input greater than this is considered a line
+// Returns the bot's position relative to the line
+LineState get_line_state() {
+  // true means line detected
+  bool line_l = analogRead(LINE_L) > LINE_THRESHOLD;
+  bool line_m = analogRead(LINE_M) > LINE_THRESHOLD;
+  bool line_r = analogRead(LINE_R) > LINE_THRESHOLD;
+  // Left/right states: don't care about middle sensor
+  if (line_l && !line_r) {
+    return LINE_STATE_LEFT;
+  }
+  if (!line_l && line_r) {
+    return LINE_STATE_RIGHT;
+  }
+  // Centered state: either all 3 or just middle
+  if ((line_l && line_m && line_r) || (!line_l && line_m && !line_r)) {
+    return LINE_STATE_CENTER;
+  }
+  // Otherwise, line is lost
+  return LINE_STATE_NONE;
+}
+
+// Prints a ton of diagnostics to Serial for debugging
+void print_diagnostics() {
+  Serial.print("LINE_L: ");
+  Serial.println(analogRead(LINE_L));
+  Serial.print("LINE_M: ");
+  Serial.println(analogRead(LINE_M));
+  Serial.print("LINE_R: ");
+  Serial.println(analogRead(LINE_R));
+  Serial.print("get_line_state(): ");
+  switch (get_line_state()) {
+    case LINE_STATE_NONE:
+      Serial.println("LINE_STATE_NONE");
+      break;
+    case LINE_STATE_LEFT:
+      Serial.println("LINE_STATE_LEFT");
+      break;
+    case LINE_STATE_CENTER:
+      Serial.println("LINE_STATE_CENTER");
+      break;
+    case LINE_STATE_RIGHT:
+      Serial.println("LINE_STATE_RIGHT");
+      break;
+  }
+}
+
+void setup() {
+  // Ultrasonic pins incl. servo
+  pinMode(ULTRASONIC_ECHO, INPUT);
+  pinMode(ULTRASONIC_TRIG, OUTPUT);
+  pinMode(SERVO_PIN, OUTPUT);
+  ultrasonic_servo.attach(SERVO_PIN, 500, 2400); // bind to servo object
+
+  // Line follower pins (Dr. B forgot this in his sample code...)
+  pinMode(LINE_L, INPUT);
+  pinMode(LINE_M, INPUT);
+  pinMode(LINE_R, INPUT);
+  
+  // Motor pins
+  pinMode(DIR_L, OUTPUT);
+  pinMode(DIR_R, OUTPUT);
+  pinMode(SPEED_L, OUTPUT);
+  pinMode(SPEED_R, OUTPUT);
+  pinMode(ENABLE, OUTPUT);
+  
+  // Serial for debugging
+  Serial.begin(9600);
+
+  // Enable motors and stop them
+  digitalWrite(ENABLE, HIGH);
   stop();
-} 
-/********************************Loop - yours to edit!****************************************************************************/
-//Below is some skeleton code that calls functions.  Your primary task is to edit this code to accomplish your goals.
+}
+
+LineState last_turn = LINE_STATE_NONE;
 void loop() {
-   //Here is how you set the servo angle
-    myservo.write(90);  //setservo position to angle; 90 is nominally straight in front
-    delay(500); //Each time you change the servo, you should give it some time to reach the destination
-
-    //Here is how you get the distance in cm
-    float distance = Distance_test();  
-
-    //Here is how you drive your car - this sample drives the car forward
-    int rspeed = 255;
-    int lspeed = 255;
-    leftMotor(lspeed,1);  //Replace 1 with zero to reverse the direction for either motor
-    rightMotor(rspeed,1);
-
-    //Here is how you tell if the line following sensor is seeing the black tape
-    //Check the values you read when on tape and off to see how to interpret these readings!
-    int onTapeLeft = analogRead(LL);
-    int onTapeRight = analogRead(LR);
-    int onTapeMiddle = analogRead(LM);
-
-    //Report variables back for your sanity
-    Serial.print("Distance Reading: ");
-    Serial.print(distance);
-    Serial.println(" cm");
-    Serial.print("Left Line Sensor: ");
-    Serial.println(onTapeLeft);
-    Serial.print("Right Line Sensor: ");
-    Serial.println(onTapeRight);
-    Serial.print("Right Line Middle: ");
-    Serial.println(onTapeMiddle);
+  switch (get_line_state()) {
+    case LINE_STATE_NONE:
+      Serial.println("Line lost!");
+      // turn in the last turn direction to try to find line again
+      if (last_turn == LINE_STATE_LEFT) {
+        set_speeds(-0.3, 0.3);
+      }
+      else {
+        set_speeds(0.3, -0.3);
+      }
+      break;
+    case LINE_STATE_LEFT: // Line is to the left, so steer left
+      set_speeds(0.2, 0.5);
+      last_turn = LINE_STATE_LEFT;
+      break;
+    case LINE_STATE_RIGHT:
+      set_speeds(0.5, 0.2);
+      last_turn = LINE_STATE_RIGHT;
+      break;
+    case LINE_STATE_CENTER:
+      set_speeds(0.5, 0.5);
+      break;
+  }
+  //delay(10);
+  print_diagnostics(); // Uncomment for serial spam
 }
