@@ -1,7 +1,7 @@
 // This code is based on starter code provided by Elegoo and modifications made by Mark Bedillion
 
-// Servo library
-#include <Servo.h>
+// External libraries
+#include <Servo.h> // Servo driver
 
 // Headers for project files
 #include "pins.hpp"  // Pin definitions
@@ -12,6 +12,8 @@
 
 // Servo object for the ultrasonic servo
 Servo ultrasonic_servo;
+// IMU object
+//MPU6050 imu;
 
 void setup() {
   // Ultrasonic pins incl. servo
@@ -32,6 +34,9 @@ void setup() {
   pinMode(SPEED_R, OUTPUT);
   pinMode(ENABLE, OUTPUT);
   
+  // Mode button
+  pinMode(MODE_BUTTON, INPUT_PULLUP);
+  
   // Serial for debugging
   Serial.begin(9600);
 
@@ -39,12 +44,28 @@ void setup() {
   digitalWrite(ENABLE, HIGH);
   stop();
 
-
-  follow_line_until_turned(0.8, 90.0, false, 0.0);
+  // Hold mode: To ensure precise timing of the start, movement only starts after releasing the MODE button
+  while (digitalRead(MODE_BUTTON) == LOW);
+  
+  // MOVEMENT PROGRAMMING: This is where we tell it the movements it has to do!
+  // Start and turn #1
+  follow_line_timed(0.8, 1500, true, 0.0);
+  stop();
+  // Wait until gates are raised
+  while (get_distance() < 50.0);
+  // Fast on straight #1
+  follow_line_timed(1.0, 1000, true, 0.0);
+  // Turn #2 and straight #2, take it slow (going too fast here seems to cause it to be super wobbly on the slalom)
+  follow_line_timed(0.8, 1500, true, 0.0);
+  // A bit slower on the slalom, and stop when the final wall is sensed
+  follow_line_until_near_wall(0.8, 30.0, true, 0.0);
+  stop();
+  //todo: ensure precise placement relative to wall
 }
 
-LineState last_turn = LINE_STATE_NONE;
+//LineState last_turn = LINE_STATE_NONE;
 void loop() {
+  // Loop will be empty in the final one since this just needs to run once
   /*switch (get_line_state()) {
     case LINE_STATE_NONE:
       Serial.println("Line lost!");

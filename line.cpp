@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "pins.hpp"
 #include "motor.hpp"
+#include "misc.hpp"
 
 
 // Returns the bot's position relative to the line
@@ -26,11 +27,6 @@ LineState get_line_state() {
   return LINE_STATE_NONE;
 }
 
-#define TURN_MEMORY_RATE 0.5
-#define FIND_LINE_SPEED 0.8
-#define TURN_PRIMARY_SPEED 1.0
-#define TURN_SECONDARY_SPEED 0.5
-
 // Decides which way to turn to find a lost line. true == right
 bool _decide_direction(float turn_memory, bool override_turn, float override_bias) {
   float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory; // Closer to 1 if it has been turning in a direction consistently, 0 if it hasn't
@@ -43,41 +39,77 @@ bool _decide_direction(float turn_memory, bool override_turn, float override_bia
     return turn_memory > 0.0;
   }
 }
+
+// Helper funciton: does 1 step of the line follow algorithm
+void _follow_line_step(float motor_speed, float* turn_memory, bool override_turn, float override_bias) {
+  switch (get_line_state()) {
+    // If the line is centered, continue straight ahead, advance turn memory
+    case LINE_STATE_CENTER:
+      set_speeds(motor_speed, motor_speed);
+      *turn_memory = *turn_memory*(1.0-TURN_MEMORY_RATE);
+      break;
+    
+    // If the line is to the left or right, turn that direction, advance turn memory
+    case LINE_STATE_LEFT:
+      set_speeds(motor_speed*TURN_SECONDARY_SPEED_FACTOR, motor_speed*TURN_PRIMARY_SPEED_FACTOR);
+      *turn_memory = *turn_memory*(1.0-TURN_MEMORY_RATE) - TURN_MEMORY_RATE;
+      break;
+    case LINE_STATE_RIGHT:
+      set_speeds(motor_speed*TURN_PRIMARY_SPEED_FACTOR, motor_speed*TURN_SECONDARY_SPEED_FACTOR);
+      *turn_memory = *turn_memory*(1.0-TURN_MEMORY_RATE) + TURN_MEMORY_RATE;
+      break;
+    
+    // If the line is lost, decide which way to turn based on turn memory and the overrides
+    case LINE_STATE_NONE:
+      // true == right
+      if (_decide_direction(*turn_memory, override_turn, override_bias)) {
+        set_speeds(motor_speed*FIND_LINE_SPEED_FACTOR, -motor_speed*FIND_LINE_SPEED_FACTOR);
+      }
+      else {
+        set_speeds(-motor_speed*FIND_LINE_SPEED_FACTOR, motor_speed*FIND_LINE_SPEED_FACTOR);
+      }
+      break;
+  }
+}
+
 // Follow the line until turned a certain amount, given by the angle.
 // If the line is lost, turn in the direction it's been turning already, unless 
-void follow_line_until_turned(float motor_speed, float angle, bool override_turn, float override_bias) {
+void follow_line_timed(float motor_speed, int time_ms, bool override_turn, float override_bias) {
+  // Get the time at the start
+  unsigned long start_time = millis();
   // Keep a "memory" of how it's been turning
   float turn_memory = 0.0;
   while (true) {
-    switch (get_line_state()) {
-      // If the line is centered, continue straight ahead, advance turn memory
-      case LINE_STATE_CENTER:
-        set_speeds(motor_speed, motor_speed);
-        turn_memory = turn_memory*TURN_MEMORY_RATE;
-        break;
-      
-      // If the line is to the left or right, turn that direction, advance turn memory
-      case LINE_STATE_LEFT:
-        set_speeds(motor_speed*TURN_SECONDARY_SPEED, motor_speed*TURN_PRIMARY_SPEED);
-        turn_memory = turn_memory*TURN_MEMORY_RATE - TURN_MEMORY_RATE;
-        break;
-      case LINE_STATE_RIGHT:
-        set_speeds(motor_speed*TURN_PRIMARY_SPEED, motor_speed*TURN_SECONDARY_SPEED);
-        turn_memory = turn_memory*TURN_MEMORY_RATE + TURN_MEMORY_RATE;
-        break;
-      
-      // If the line is lost, decide which way to turn based on turn memory and the overrides
-      case LINE_STATE_NONE:
-        // true == right
-        if (_decide_direction(turn_memory, override_turn, override_bias)) {
-          set_speeds(motor_speed*FIND_LINE_SPEED, -motor_speed*FIND_LINE_SPEED);
-        }
-        else {
-          set_speeds(-motor_speed*FIND_LINE_SPEED, motor_speed*FIND_LINE_SPEED);
-        }
-        break;
+    // Do the line follow algorithm
+    _follow_line_step(motor_speed, &turn_memory, override_turn, override_bias);
+    delay(10);
+    // End loop after enough time has passed
+    if (millis() >= start_time + time_ms) {
+      return;
     }
-    Serial.println(turn_memory);
+  }
+}
+
+void follow_line_until_near_wall(float motor_speed, float distance, bool override_turn, float override_bias) {
+  // Keep a "memory" of how it's been turning
+  float turn_memory = 0.0;
+  while (true) {
+    // Do the line follow algorithm
+    _follow_line_step(motor_speed, &turn_memory, override_turn, override_bias);
+    // End if a wall is nearby
+    if (get_distance() < distance) {
+      return;
+    }
+    delay(10);
+  }
+}
+
+void follow_line_forever(float motor_speed, bool override_turn, float override_bias) {
+  // Keep a "memory" of how it's been turning
+  float turn_memory = 0.0;
+  while (true) {
+    // Do the line follow algorithm
+    _follow_line_step(motor_speed, &turn_memory, override_turn, override_bias);
     delay(10);
   }
 }
