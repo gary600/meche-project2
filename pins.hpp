@@ -1,10 +1,13 @@
 #pragma once
 
+#include <Servo.h>
+#include <FastLED.h>
 
 // Ultrasonic pins
 #define ULTRASONIC_TRIG 13
 #define ULTRASONIC_ECHO 12
 #define SERVO_PIN 10 // Ultrasonic pan servo
+extern Servo ultrasonic_servo; // extern allows this to be a global variable among different files
 
 // Motor pins: SPEED defines the speed based on PWM, and DIR defines the direction
 #define SPEED_L 6
@@ -20,3 +23,5 @@
 
 // Misc
 #define MODE_BUTTON 2
+#define LED_PIN 4
+extern CRGB leds[1]; // FastLED's LED object

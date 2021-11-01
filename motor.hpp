@@ -1,9 +1,9 @@
 #pragma once
 
 
+// See motor.cpp for explanation
 void set_speeds(float l_speed, float r_speed);
 
-// _motor_speed is not in here, since it's not intended to be used directly
-
 // Shorthand macro to stop motors
-#define stop() set_speeds(0.0, 0.0)
+// Underscore is to avoid name conflict with some function FastLED exports
+#define stop_motors() set_speeds(0.0, 0.0)

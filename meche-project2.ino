@@ -2,6 +2,7 @@
 
 // External libraries
 #include <Servo.h> // Servo driver
+#include <FastLED.h> // for LED, mainly for debug. Go to Tools->Manage Libraries to install FastLED
 
 // Headers for project files
 #include "pins.hpp"  // Pin definitions
@@ -9,13 +10,12 @@
 #include "line.hpp"  // Line follower functions
 #include "misc.hpp"  // Miscellaneous functions (ultrasonic, etc)
 
-
-// Servo object for the ultrasonic servo
+// Objects for managing several devices
 Servo ultrasonic_servo;
-// IMU object
-//MPU6050 imu;
+CRGB leds[1]; // The RGB LED on top. Managed with FastLED library
 
 void setup() {
+  // SETUP
   // Ultrasonic pins incl. servo
   pinMode(ULTRASONIC_ECHO, INPUT);
   pinMode(ULTRASONIC_TRIG, OUTPUT);
@@ -37,58 +37,52 @@ void setup() {
   // Mode button
   pinMode(MODE_BUTTON, INPUT_PULLUP);
   
+  // LED setup
+  FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, 1);
+  
   // Serial for debugging
   Serial.begin(9600);
 
   // Enable motors and stop them
   digitalWrite(ENABLE, HIGH);
-  stop();
+  stop_motors();
 
   // Hold mode: To ensure precise timing of the start, movement only starts after releasing the MODE button
   while (digitalRead(MODE_BUTTON) == LOW);
   
-  // MOVEMENT PROGRAMMING: This is where we tell it the movements it has to do!
-  // Start and turn #1
-  follow_line_timed(0.8, 1500, true, 0.0);
-  stop();
+  // ROUTINE: This is where we tell it the movements it has to do to complete the course!
+  
+  // Start and turn #1. Bias strongly to turn right so that it doesn't lose the turn at this speed
+  follow_line_timed(1.0, 1500, true, 0.6);
+  stop_motors();
+  
+  //TODO: Redo gates according to how they'll actually be on the course
   // Wait until gates are raised
   while (get_distance() < 50.0);
+  
   // Fast on straight #1
   follow_line_timed(1.0, 1000, true, 0.0);
+  stop_motors(); // Briefly stop to avoid wobbling on the next part (might not be necessary? needs more testing)
+  delay(20);
+  
   // Turn #2 and straight #2, take it slow (going too fast here seems to cause it to be super wobbly on the slalom)
-  follow_line_timed(0.8, 1500, true, 0.0);
-  // A bit slower on the slalom, and stop when the final wall is sensed
-  follow_line_until_near_wall(0.8, 30.0, true, 0.0);
-  stop();
-  //todo: ensure precise placement relative to wall
+  // Bias slightly right, because it sometimes tries to go left for some reason
+  follow_line_timed(0.7, 1500, true, 0.2);
+  
+  // Slower on the slalom, and stop when the final wall is sensed
+  // NOTE: update the distance (30.0) with the correct value once we have it!
+  follow_line_until_near_wall(0.6, 30.0, true, 0.0);
+  stop_motors();
+  
+  // Calibrate distance to wall precisely
+  align_distance(30.0);
+  stop_motors();
+  
+  // We're done!
 }
 
-//LineState last_turn = LINE_STATE_NONE;
 void loop() {
-  // Loop will be empty in the final one since this just needs to run once
-  /*switch (get_line_state()) {
-    case LINE_STATE_NONE:
-      Serial.println("Line lost!");
-      // turn in the last turn direction to try to find line again
-      if (last_turn == LINE_STATE_LEFT) {
-        set_speeds(-0.3, 0.3);
-      }
-      else {
-        set_speeds(0.3, -0.3);
-      }
-      break;
-    case LINE_STATE_LEFT: // Line is to the left, so steer left
-      set_speeds(0.2, 0.5);
-      last_turn = LINE_STATE_LEFT;
-      break;
-    case LINE_STATE_RIGHT:
-      set_speeds(0.5, 0.2);
-      last_turn = LINE_STATE_RIGHT;
-      break;
-    case LINE_STATE_CENTER:
-      set_speeds(0.5, 0.5);
-      break;
-  }
-  //delay(10);
-  print_diagnostics(); // Uncomment for serial spam*/
+  // Loop only runs once the routine is done, so Rainbow LED!
+  leds[0] = CHSV(millis() / 10 % 255, 255, 255);
+  FastLED.show();
 }
