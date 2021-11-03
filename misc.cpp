@@ -49,7 +49,7 @@ void align_distance(float target) {
   while (true) {
     // Mostly-proportional controller.
     // The only difference from a standard proportional controller is that an additional 0.1 speed is added in the target direction.
-    // This makes it so the motors doesn't stall too far from the target due to the speed being too low
+    // This makes it so the motors don't stall too far from the target due to the speed being too low
     float dist = get_distance();
     float error = dist - target;
     float speeds = error*DISTANCE_KP + (error >= 0 ? 0.1 : -0.1);

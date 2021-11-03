@@ -31,6 +31,7 @@ LineState get_line_state() {
 // Helper function: decides which way to turn to find a lost line. true == right
 bool _decide_direction(float turn_memory, bool override_turn, float override_bias) {
   // Closer to 1 if the robot has been consistently turning in a direction recently, 0 if it hasn't
+  // Approaches 1 as it turns tightly, approaches 0 as it goes straight
   float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
   
   // If we're not certain about how we've been turning, use the direction we were given.
@@ -43,10 +44,45 @@ bool _decide_direction(float turn_memory, bool override_turn, float override_bia
   }
 }
 
+#define LINE_KP 0.003
+#define LINE_KI 0.0
+#define LINE_KD 0.0
+
+// A test implementation of PID to see if it's better
+void follow_line_pid(float motor_speed) {
+  int integral = 0; // for I term, arbitrary units
+  int prev_err = 0; // for D term, arbitrary units
+  unsigned long prev_time = millis(); // for I and D terms
+  while (true) {
+    int err = analogRead(LINE_R) - analogRead(LINE_L) ; // Let error be the difference in reading between left and right
+    unsigned long now = millis();
+    // Update integral
+    integral += (now - prev_time) * err;
+    // Find derivative
+    float derivative = (float)(err - prev_err)/(float)(now - prev_time);
+
+    // The resultant setpoint from PID. Negative means turn left. Range *should* be -1.0 to 1.0
+    float setpoint = LINE_KP*(float)err + LINE_KI*(float)integral + LINE_KD*derivative;
+
+    // Set motor speeds from setpoint
+    if (err > 0.0 ) {
+      set_speeds(motor_speed, motor_speed*(1.0-setpoint));
+    }
+    else {
+      set_speeds(motor_speed*(1.0+setpoint), motor_speed);
+    }
+
+    Serial.print("err: "); Serial.println(err);
+    Serial.print("derivative: "); Serial.println(derivative);
+    Serial.print("integral: "); Serial.println(integral);
+    Serial.print("set: "); Serial.println(setpoint);
+  }
+}
+
 // Helper function: does 1 step of the line follow algorithm, including setting speeds
 float _follow_line_step(float motor_speed, float turn_memory, bool override_turn, float override_bias) {
   // Display the turn memory certainty on the LED. more green=more certain, more red=less certain. (see _decide_direction() for an explanation of certainty)
-  float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory; // Closer to 1 if it has been turning in a direction consistently, 0 if it hasn't
+  float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
   leds[0].r = (1.0-certainty)*255.0;
   leds[0].g = certainty*255.0;
   FastLED.show();
@@ -73,10 +109,10 @@ float _follow_line_step(float motor_speed, float turn_memory, bool override_turn
     case LINE_STATE_NONE:
       // true == right
       if (_decide_direction(turn_memory, override_turn, override_bias)) {
-        set_speeds(motor_speed*FIND_LINE_SPEED_FACTOR, -motor_speed*FIND_LINE_SPEED_FACTOR);
+        set_speeds(motor_speed*FIND_LINE_PRIMARY_SPEED_FACTOR, motor_speed*FIND_LINE_SECONDARY_SPEED_FACTOR);
       }
       else {
-        set_speeds(-motor_speed*FIND_LINE_SPEED_FACTOR, motor_speed*FIND_LINE_SPEED_FACTOR);
+        set_speeds(motor_speed*FIND_LINE_SECONDARY_SPEED_FACTOR, motor_speed*FIND_LINE_PRIMARY_SPEED_FACTOR);
       }
       break;
   }
@@ -99,6 +135,9 @@ void follow_line_timed(float motor_speed, int time_ms, bool override_turn, float
     turn_memory = _follow_line_step(motor_speed, turn_memory, override_turn, override_bias);
     // End loop after enough time has passed
     if (millis() >= start_time + time_ms) {
+      //DEBUG: stop between steps for timing debug
+      //stop_motors();
+      //delay(1000);
       return;
     }
     delay(TURN_PERIOD);

@@ -6,6 +6,9 @@
 
 // Helper function: Sets the speed of 1 side of the robot.
 void _motor_speed(int speed_pin, int dir_pin, float motor_speed) {
+  // Clamp to range -1 to 1 to prevent overflow
+  motor_speed = motor_speed > 1.0 ? 1.0 : motor_speed;
+  motor_speed = motor_speed < -1.0 ? -1.0 : motor_speed;
   // Positive means forwards
   if (motor_speed >= 0) {
     analogWrite(speed_pin, motor_speed*255.0);
