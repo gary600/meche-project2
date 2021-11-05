@@ -1,4 +1,5 @@
-// This code is based on starter code provided by Elegoo and modifications made by Mark Bedillion
+// `meche-project2.ino`: Main project file, including course routine.
+// This code was originally based on starter code provided by Elegoo and modifications made by Mark Bedillion
 
 // External libraries
 #include <Servo.h> // Servo driver
@@ -10,9 +11,11 @@
 #include "line.hpp"  // Line follower functions
 #include "misc.hpp"  // Miscellaneous functions (ultrasonic, etc)
 
+
 // Objects for managing several devices
 Servo ultrasonic_servo;
 CRGB leds[1]; // The RGB LED on top. Managed with FastLED library
+
 
 void setup() {
   // SETUP
@@ -22,7 +25,7 @@ void setup() {
   pinMode(SERVO_PIN, OUTPUT);
   ultrasonic_servo.attach(SERVO_PIN, 500, 2400); // bind to servo object
 
-  // Line follower pins (Dr. B forgot this in his sample code...)
+  // Line follower pins
   pinMode(LINE_L, INPUT);
   pinMode(LINE_M, INPUT);
   pinMode(LINE_R, INPUT);
@@ -51,51 +54,56 @@ void setup() {
   while (digitalRead(MODE_BUTTON) == LOW);
 
   //follow_line_pid(0.3);
-  
-  // ROUTINE: This is where we tell it the movements it has to do to complete the course!
-  
+
+  // Do the actual course routine. This is in setup() so it only runs once.
+  do_course();
+}
+
+
+// COURSE ROUTINE
+// This is where we tell it the movements it has to do to complete the course!
+// Most of he functions used here are in `line.cpp`, `motor.cpp`, and `misc.cpp`. See the files for explanations.
+void do_course() {  
   // Start and turn #1. Bias strongly to turn right so that it doesn't lose the turn at this speed
-  follow_line_timed(1.0, 1400, true, 0.6);
+  follow_line_timed(0.8, true, 0.9, 1600);
   stop_motors();
   
-  // Go right up to the gate to trigger sensor
-  align_distance(10.0);
+  // Gates: go right up to the gate to trigger sensor
+  align_distance(5.0, 0.2);
   // Wait till gates are raised
   stop_motors();
   while (get_distance() < 50.0);
-  // Wait a lil bit to avoid smashing camera on gate
-  //TODO: remove this if they let us take the camera module off
-  delay(1500);
-  //TODO: Figure out if they decide to have gates lift up in sequence, and if so, account for that
   
-  // Fast on straight #1
-  follow_line_timed(1.0, 1500, true, 0.0);
+  // Fast on straight #1, bias right in case we hit the turn early 
+  follow_line_timed(1.0, true, 0.5, 1200);
   
-  // Turn #2, take it slower
-  // Bias right, because it sometimes tries to go left for some reason
-  follow_line_timed(0.7, 1000, true, 0.7);
+  // Turn #2, take it slower, bias right
+  follow_line_timed(0.6, true, 0.7, 1000);
 
   // Straight #2, fast
-  follow_line_timed(1.0, 500, true, 0.0);
+  follow_line_timed(0.6, true, 0.3, 700);
+
+  // Turn #3 and #4, bias right HARD
+  follow_line_timed(0.6, true, 0.99, 2500);
   
   // Slower on the slalom. Timed because we don't want to start sensing for the wall until very late because it'll sense the side of the gate assembly as the wall
   // No bias because the turns are too small to time separately(?)
-  follow_line_timed(0.7, 9500, true, 0.0);
+  follow_line_timed(0.8, true, 0.0, 6000);
   
   // Stop when the final wall is sensed. Bias right because it keeps turning left here
-  follow_line_until_near_wall(0.8, 30.0, true, 0.7);
+  follow_line_until_near_wall(0.8, true, 0.7, 15.0);
   stop_motors();
   
   // Calibrate distance to wall precisely
-  // NOTE: update the distance (30.0) with the correct value once we have it!
-  align_distance(30.0);
+  align_distance(10.0, 0.01);
   stop_motors();
   
   // We're done!
 }
 
+
 void loop() {
-  // Loop only runs once the routine is done, so Rainbow LED!
+  // Loop only runs once the course routine is done, so Rainbow LED!
   leds[0] = CHSV(millis() / 10 % 255, 255, 255);
   FastLED.show();
 }

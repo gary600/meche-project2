@@ -1,3 +1,4 @@
+// `motor.hpp`: Associated header file for `motor.cpp`
 #pragma once
 
 

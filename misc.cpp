@@ -1,8 +1,8 @@
+// `misc.cpp`: Miscellaneous functions, including ultrasonic utils.
 #include "misc.hpp"
 
 #include <Arduino.h>
 #include "pins.hpp"
-#include "line.hpp"
 #include "motor.hpp"
 
 
@@ -17,33 +17,8 @@ float get_distance() {
   return pulseIn(ULTRASONIC_ECHO, HIGH) / 58.0 - ULTRASONIC_OFFSET; // Account for the position of the ultrasonic relative to the front of the robot
 }
 
-// Prints a ton of diagnostics to Serial for debugging. Self-explanatory
-void print_diagnostics() {
-  Serial.print("LINE_L: ");
-  Serial.println(analogRead(LINE_L));
-  Serial.print("LINE_M: ");
-  Serial.println(analogRead(LINE_M));
-  Serial.print("LINE_R: ");
-  Serial.println(analogRead(LINE_R));
-  Serial.print("get_line_state(): ");
-  switch (get_line_state()) {
-    case LINE_STATE_NONE:
-      Serial.println("LINE_STATE_NONE");
-      break;
-    case LINE_STATE_LEFT:
-      Serial.println("LINE_STATE_LEFT");
-      break;
-    case LINE_STATE_CENTER:
-      Serial.println("LINE_STATE_CENTER");
-      break;
-    case LINE_STATE_RIGHT:
-      Serial.println("LINE_STATE_RIGHT");
-      break;
-  }
-}
-
 // Make sure the robot is a precise distance from the ultrasonic target
-void align_distance(float target) {
+void align_distance(float target, float precision) {
   // Keep track of how close it's been to the target over the last few cycles
   float err_memory = 0.0;
   while (true) {
@@ -59,7 +34,7 @@ void align_distance(float target) {
     err_memory = 0.9*err_memory + 0.1*error;
     
     // If it's been super close to the target recently, we're done
-    if (-0.2 < err_memory && err_memory < 0.2) {
+    if (-precision < err_memory && err_memory < precision) {
       return;
     }
 
