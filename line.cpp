@@ -102,14 +102,13 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
 //    override_turn: the direction to turn if the line follower isn't certain on which way to turn
 //    override_bias: the certainty value below which the line follower uses override_turn instead of the turn direction it thinks is correct
 //      (See decide_direction for an explanation of certainty)
+float turn_memory = 0.0;
 
 // Follow the line forever (mainly for debug purposes)
 void follow_line_forever(float motor_speed, bool override_turn, float override_bias) {
   // Keep a "memory" of how it's been turning.
   // This is closer to 1.0 if it's been turning right consistently, and closer to -1.0 if it's been turning left consistently
   // The rate at which it updates is defined by TURN_MEMORY_RATE
-  float turn_memory = 0.0;
-  
   while (true) {
     // Do the line follow algorithm
     turn_memory = _follow_line_step(motor_speed, override_turn, override_bias, turn_memory);
@@ -120,9 +119,6 @@ void follow_line_forever(float motor_speed, bool override_turn, float override_b
 
 // Follow the line until a certain amount of time has passed.
 void follow_line_timed(float motor_speed, bool override_turn, float override_bias, int time_ms) {
-  // Keep a "memory" of how it's been turning (see follow_line_forever for explanation)
-  float turn_memory = 0.0;
-  
   // Get the time at the start
   unsigned long start_time = millis();
   
@@ -144,9 +140,6 @@ void follow_line_timed(float motor_speed, bool override_turn, float override_bia
 
 // Follow line until the measured ultrasonic distance is below a certain value
 void follow_line_until_near_wall(float motor_speed, bool override_turn, float override_bias, float distance) {
-  // Keep a "memory" of how it's been turning (see follow_line_forever for explanation)
-  float turn_memory = 0.0;
-  
   while (true) {
     // Do the line follow algorithm
     turn_memory = _follow_line_step(motor_speed, override_turn, override_bias, turn_memory);
