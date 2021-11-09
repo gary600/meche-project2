@@ -65,7 +65,7 @@ void setup() {
 // Most of he functions used here are in `line.cpp`, `motor.cpp`, and `misc.cpp`. See the files for explanations.
 void do_course() {  
   // Start and turn #1. Bias strongly to turn right so that it doesn't lose the turn at this speed
-  follow_line_timed(0.8, true, 0.9, 1600);
+  follow_line_timed(0.9, true, 0.9, 1500);
   stop_motors();
   
   leds[0].r = 255;
@@ -86,21 +86,21 @@ void do_course() {
   FastLED.show();
   
   // Turn #2, take it slower, bias right
-  follow_line_timed(0.7, true, 0.7, 1000);
+  follow_line_timed(0.9, true, 0.7, 1000);
   
   leds[0].r = 255;
   leds[0].b = 0;
   FastLED.show();
 
   // Straight #2, fast
-  follow_line_timed(0.9, true, 0.3, 400);
+  follow_line_timed(1.0, true, 0.3, 400);
   
   leds[0].r = 0;
   leds[0].b = 255;
   FastLED.show();
 
   // Turn #3 and #4, bias right HARD
-  follow_line_timed(0.7, true, 0.99, 2500);
+  follow_line_timed(0.9, true, 0.99, 1700);
   
   leds[0].r = 255;
   leds[0].b = 0;
@@ -108,7 +108,7 @@ void do_course() {
   
   // Slower on the slalom. Timed because we don't want to start sensing for the wall until very late because it'll sense the side of the gate assembly as the wall
   // No bias because the turns are too small to time separately(?)
-  follow_line_timed(0.8, true, 0.0, 5300);
+  follow_line_timed(0.9, true, 0.0, 5000);
   
   leds[0].r = 0;
   leds[0].b = 255;
