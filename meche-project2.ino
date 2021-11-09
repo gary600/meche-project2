@@ -68,6 +68,10 @@ void do_course() {
   follow_line_timed(0.8, true, 0.9, 1600);
   stop_motors();
   
+  leds[0].r = 255;
+  leds[0].b = 0;
+  FastLED.show();
+  
   // Gates: go right up to the gate to trigger sensor
   align_distance(5.0, 0.2);
   // Wait till gates are raised
@@ -77,22 +81,46 @@ void do_course() {
   // Fast on straight #1, bias right in case we hit the turn early 
   follow_line_timed(1.0, true, 0.5, 1200);
   
+  leds[0].r = 0;
+  leds[0].b = 255;
+  FastLED.show();
+  
   // Turn #2, take it slower, bias right
-  follow_line_timed(0.6, true, 0.7, 1000);
+  follow_line_timed(0.7, true, 0.7, 1000);
+  
+  leds[0].r = 255;
+  leds[0].b = 0;
+  FastLED.show();
 
   // Straight #2, fast
-  follow_line_timed(0.6, true, 0.3, 700);
+  follow_line_timed(0.9, true, 0.3, 400);
+  
+  leds[0].r = 0;
+  leds[0].b = 255;
+  FastLED.show();
 
   // Turn #3 and #4, bias right HARD
-  follow_line_timed(0.6, true, 0.99, 2500);
+  follow_line_timed(0.7, true, 0.99, 2500);
+  
+  leds[0].r = 255;
+  leds[0].b = 0;
+  FastLED.show();
   
   // Slower on the slalom. Timed because we don't want to start sensing for the wall until very late because it'll sense the side of the gate assembly as the wall
   // No bias because the turns are too small to time separately(?)
-  follow_line_timed(0.8, true, 0.0, 6000);
+  follow_line_timed(0.8, true, 0.0, 5300);
+  
+  leds[0].r = 0;
+  leds[0].b = 255;
+  FastLED.show();
   
   // Stop when the final wall is sensed. Bias right because it keeps turning left here
   follow_line_until_near_wall(0.8, true, 0.7, 15.0);
   stop_motors();
+  
+  leds[0].r = 255;
+  leds[0].b = 0;
+  FastLED.show();
   
   // Calibrate distance to wall precisely
   align_distance(10.0, 0.01);

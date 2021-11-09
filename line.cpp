@@ -53,10 +53,10 @@ bool _decide_direction(float turn_memory, bool override_turn, float override_bia
 // Helper function: does 1 step of the line follow algorithm, including setting speeds
 float _follow_line_step(float motor_speed, bool override_turn, float override_bias, float turn_memory) {
   //DEBUG: Display the turn memory certainty on the LED. more green=more certain, more red=less certain. (see _decide_direction for an explanation of certainty)
-  float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
-  leds[0].r = (1.0-certainty)*255.0;
-  leds[0].g = certainty*255.0;
-  FastLED.show();
+  //float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
+  //leds[0].r = (1.0-certainty)*255.0;
+  //leds[0].g = certainty*255.0;
+  //FastLED.show();
 
   // Do different things depending on where the line is relative to the robot
   switch (get_line_state()) {
