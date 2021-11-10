@@ -34,12 +34,17 @@ LineState get_line_state() {
   return LINE_STATE_NONE;
 }
 
+// A heuristic value for determining which way it should turn if it loses the line.
+// This is interpolated toward 1.0 if it's been turning right consistently, and toward -1.0 if it's been turning left consistently
+// Closer to 0.0 means that it hasn't been turning
+float turn_memory = 0.0;
+
 // Helper function: decides which way to turn to find a lost line. true == right
-bool _decide_direction(float turn_memory, bool override_turn, float override_bias) {
+bool _decide_direction(bool override_turn, float override_bias) {
   // Certainty: closer to 1 if the robot has been consistently turning in a direction recently, 0 if it hasn't
   // Approaches 1 as it turns tightly, approaches 0 as it goes straight
-  // Numerically, it's the absolute value of turn_memory (explained in follow_line_forever)
-  float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
+  // Numerically, it's the absolute value of turn_memory
+  float certainty = fabs(turn_memory);
   
   // If we're not certain about how we've been turning, use the direction we were given.
   if (certainty < override_bias) {
@@ -52,33 +57,33 @@ bool _decide_direction(float turn_memory, bool override_turn, float override_bia
 }
 
 // Helper function: does 1 step of the line follow algorithm, including setting speeds
-float _follow_line_step(float motor_speed, bool override_turn, float override_bias, float turn_memory) {
+float _follow_line_step(float motor_speed, bool override_turn, float override_bias) {
   //DEBUG: Display the turn memory certainty on the LED. more green=more certain, more red=less certain. (see _decide_direction for an explanation of certainty)
-  //float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
+  //float certainty = fabs(turn_memory);
   //set_led((1.0-certainty)*255, certainty*255, 0);
 
   // Do different things depending on where the line is relative to the robot
   switch (get_line_state()) {
-    // If the line is centered, continue straight ahead, and advance turn memory
+    // If the line is centered, continue straight ahead, and interpolate turn memory toward 0.0
     case LINE_STATE_CENTER:
       set_speeds(motor_speed, motor_speed);
-      turn_memory = turn_memory*(1.0-TURN_MEMORY_RATE);
+      turn_memory = lerp(turn_memory, 0.0, TURN_MEMORY_RATE);
       break;
     
-    // If the line is to the left or right, turn that direction, and advance turn memory
+    // If the line is to the left or right, turn that direction, and interpolate turn memory towards 1.0 or -1.0 depending on direction
     case LINE_STATE_LEFT:
       set_speeds(motor_speed*TURN_SECONDARY_SPEED_FACTOR, motor_speed*TURN_PRIMARY_SPEED_FACTOR);
-      turn_memory = turn_memory*(1.0-TURN_MEMORY_RATE) - TURN_MEMORY_RATE;
+      turn_memory = lerp(turn_memory, -1.0, TURN_MEMORY_RATE);
       break;
     case LINE_STATE_RIGHT:
       set_speeds(motor_speed*TURN_PRIMARY_SPEED_FACTOR, motor_speed*TURN_SECONDARY_SPEED_FACTOR);
-      turn_memory = turn_memory*(1.0-TURN_MEMORY_RATE) + TURN_MEMORY_RATE;
+      turn_memory = lerp(turn_memory, 1.0, TURN_MEMORY_RATE);
       break;
     
     // If the line is lost, decide which way to turn based on turn memory and the direction overidde provided. See _decide_direction()
     case LINE_STATE_NONE:
       // true == right
-      if (_decide_direction(turn_memory, override_turn, override_bias)) {
+      if (_decide_direction(override_turn, override_bias)) {
         set_speeds(motor_speed*FIND_LINE_PRIMARY_SPEED_FACTOR, motor_speed*FIND_LINE_SECONDARY_SPEED_FACTOR);
       }
       else {
@@ -86,8 +91,6 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
       }
       break;
   }
-  // Return the updated turn memory
-  return turn_memory;
 }
 
 
@@ -102,16 +105,11 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
 //    override_bias: the certainty value below which the line follower uses override_turn instead of the turn direction it thinks is correct
 //      (See decide_direction for an explanation of certainty)
 
-// Keep a "memory" of how it's been turning.
-// This is closer to 1.0 if it's been turning right consistently, and closer to -1.0 if it's been turning left consistently
-// The rate at which it updates is defined by TURN_MEMORY_RATE
-float turn_memory = 0.0;
-
 // Follow the line forever (mainly for debug purposes)
 void follow_line_forever(float motor_speed, bool override_turn, float override_bias) {
   while (true) {
     // Do the line follow algorithm
-    turn_memory = _follow_line_step(motor_speed, override_turn, override_bias, turn_memory);
+    _follow_line_step(motor_speed, override_turn, override_bias);
     
     delay(TURN_PERIOD);
   }
@@ -124,13 +122,10 @@ void follow_line_timed(float motor_speed, bool override_turn, float override_bia
   
   while (true) {
     // Do the line follow algorithm
-    turn_memory = _follow_line_step(motor_speed, override_turn, override_bias, turn_memory);
+    _follow_line_step(motor_speed, override_turn, override_bias);
     
     // End after enough time has passed
     if (millis() >= start_time + time_ms) {
-      //DEBUG: stop between steps for timing debug
-      //stop_motors();
-      //delay(1000);
       return;
     }
     
@@ -142,7 +137,7 @@ void follow_line_timed(float motor_speed, bool override_turn, float override_bia
 void follow_line_until_near_wall(float motor_speed, bool override_turn, float override_bias, float distance) {
   while (true) {
     // Do the line follow algorithm
-    turn_memory = _follow_line_step(motor_speed, override_turn, override_bias, turn_memory);
+    _follow_line_step(motor_speed, override_turn, override_bias);
     
     // End if a wall is nearby
     if (get_distance() < distance) {

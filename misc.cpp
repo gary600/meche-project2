@@ -1,4 +1,4 @@
-// `misc.cpp`: Miscellaneous functions, including ultrasonic utils.
+// `misc.cpp`: Miscellaneous functions
 #include "misc.hpp"
 
 #include <Arduino.h>
@@ -27,11 +27,11 @@ void align_distance(float target, float precision) {
     // This makes it so the motors don't stall too far from the target due to the speed being too low
     float dist = get_distance();
     float error = dist - target;
-    float speeds = error*DISTANCE_KP + (error >= 0 ? 0.1 : -0.1);
+    float speeds = error*DISTANCE_KP + (error >= 0.0 ? 0.1 : -0.1);
     set_speeds(speeds, speeds);
     
     // Update the error memory
-    err_memory = 0.9*err_memory + 0.1*error;
+    err_memory = lerp(err_memory, error, 0.1);
     
     // If it's been super close to the target recently, we're done
     if (-precision < err_memory && err_memory < precision) {
