@@ -34,9 +34,10 @@ LineState get_line_state() {
   return LINE_STATE_NONE;
 }
 
-// A heuristic value for determining which way it should turn if it loses the line.
+// A heuristic value for determining which way it should turn if it loses the line. Used by all line follow functions
 // This is interpolated toward 1.0 if it's been turning right consistently, and toward -1.0 if it's been turning left consistently
 // Closer to 0.0 means that it hasn't been turning
+// Being a global variable means that the line follower will remember it, even on different segments
 float turn_memory = 0.0;
 
 // Helper function: decides which way to turn to find a lost line. true == right
@@ -46,7 +47,7 @@ bool _decide_direction(bool override_turn, float override_bias) {
   // Numerically, it's the absolute value of turn_memory
   float certainty = fabs(turn_memory);
   
-  // If we're not certain about how we've been turning, use the direction we were given.
+  // If we're not certain about how we've been turning, use the override direction.
   if (certainty < override_bias) {
     return override_turn;
   }
@@ -100,8 +101,8 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
 // If the line is lost, the algorithms above are used to try to recover.
 // Most of the actual work in these is done by _follow_line_step.
 // Explanations of common parameters:
-//    motor_speed: the "target" motor speed to use in this movement
-//    override_turn: the direction to turn if the line follower isn't certain on which way to turn
+//    motor_speed: the "target" motor speed to use in this movement (gets multiplied by various factors throughout)
+//    override_turn: the direction to turn to find a lost line if the line follower isn't certain on which way to turn
 //    override_bias: the certainty value below which the line follower uses override_turn instead of the turn direction it thinks is correct
 //      (See decide_direction for an explanation of certainty)
 

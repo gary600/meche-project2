@@ -11,11 +11,11 @@
 #define DISTANCE_KP 0.01
 
 
+// Basic linear interpolation, used in the line follower and align_distance
+#define lerp(a, b, t) (a*(1.0-t) + b*t)
+
+
 // See misc.cpp for for explanations of each function
 float get_distance();
 void align_distance(float target, float precision);
 void set_led(int r, int g, int b);
-
-// Some shorthand defines for math operations
-// Basic linear interpolation, used for the line follower and align_distance
-#define lerp(a, b, t) (a*(1.0-t) + b*t)
