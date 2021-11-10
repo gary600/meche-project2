@@ -13,8 +13,8 @@
 // Speed factors: the factors of the given speed to use for operations other than going straight
 // Primary means the motor that goes faster, i.e. the left motor when turning right
 #define TURN_PRIMARY_SPEED_FACTOR 1.0
-#define TURN_SECONDARY_SPEED_FACTOR 0.5
-#define FIND_LINE_PRIMARY_SPEED_FACTOR 0.7
+#define TURN_SECONDARY_SPEED_FACTOR 0.6
+#define FIND_LINE_PRIMARY_SPEED_FACTOR 0.5
 #define FIND_LINE_SECONDARY_SPEED_FACTOR -0.5
 
 

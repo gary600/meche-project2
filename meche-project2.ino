@@ -65,7 +65,7 @@ void setup() {
 // Most of the functions used here are in `line.cpp`, `motor.cpp`, and `misc.cpp`. See the files for explanations.
 void do_course() {  
   // Start and turn #1, stop at the gate. Bias strongly to turn right so that it doesn't lose the turn at this speed
-  follow_line_until_near_wall(0.9, true, 0.9, 12.0); // any faster than this, it consistently loses the line for some reason
+  follow_line_until_near_wall(0.8, true, 0.9, 12.0);
   stop_motors();
 
   //DEBUG: Flip the LED between red and blue to show which movement segment it's on for timing purposes
@@ -93,28 +93,28 @@ void do_course() {
   set_led(0, 0, 255); //DEBUG
   
   // Turn #2, take it slower, bias right
-  follow_line_timed(0.9, true, 0.7, 1000);
+  follow_line_timed(0.7, true, 0.7, 1000);
   
   set_led(255, 0, 0); //DEBUG
 
   // Straight #2, fast
-  follow_line_timed(1.0, true, 0.3, 400);
+  follow_line_timed(0.9, true, 0.3, 400);
   
   set_led(0, 0, 255); //DEBUG
 
   // Turn #3 and #4, bias right
-  follow_line_timed(0.9, true, 0.8, 1400);
+  follow_line_timed(0.7, true, 0.99, 2500);
   
   set_led(255, 0, 0); //DEBUG
   
   // Slower on the slalom. Timed because we don't want to start sensing for the wall until very late because it'll sense the side of the gate assembly as the wall
   // No bias because the turns are too small to time separately
-  follow_line_timed(0.9, true, 0.0, 4600);
+  follow_line_timed(0.8, true, 0.0, 5300);
   
   set_led(0, 0, 255); //DEBUG
   
   // Stop when the final wall is sensed. Bias right because it keeps trying to turn left here
-  follow_line_until_near_wall(1.0, true, 0.7, 15.0);
+  follow_line_until_near_wall(0.8, true, 0.7, 15.0);
   stop_motors();
   
   set_led(255, 0, 0); //DEBUG
