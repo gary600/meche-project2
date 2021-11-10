@@ -41,3 +41,11 @@ void align_distance(float target, float precision) {
     delay(5); // Delay so that the error memory isn't turned over too fast
   }
 }
+
+// Helper function to avoid having to use like 4 lines to set the LED
+void set_led(int r, int g, int b) {
+  leds[0].r = r;
+  leds[0].g = g;
+  leds[0].b = b;
+  FastLED.show();
+}

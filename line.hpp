@@ -32,5 +32,3 @@ LineState get_line_state();
 void follow_line_forever(float motor_speed, bool override_turn, float override_bias);
 void follow_line_timed(float motor_speed, bool override_turn, float override_bias, int time_ms);
 void follow_line_until_near_wall(float motor_speed, bool override_turn, float override_bias, float distance);
-
-void follow_line_pid(float motor_speed);

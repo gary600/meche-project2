@@ -13,5 +13,5 @@
 
 // See misc.cpp for for explanations of each function
 float get_distance();
-void print_diagnostics();
 void align_distance(float target, float precision);
+void set_led(int r, int g, int b);

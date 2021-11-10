@@ -7,6 +7,7 @@
 #include "motor.hpp"
 #include "misc.hpp"
 
+
 // HELPER FUNCTIONS
 
 // Gets the bot's position relative to the line, according to the 4 possible states.
@@ -54,9 +55,7 @@ bool _decide_direction(float turn_memory, bool override_turn, float override_bia
 float _follow_line_step(float motor_speed, bool override_turn, float override_bias, float turn_memory) {
   //DEBUG: Display the turn memory certainty on the LED. more green=more certain, more red=less certain. (see _decide_direction for an explanation of certainty)
   //float certainty = turn_memory > 0.0 ? turn_memory : -turn_memory;
-  //leds[0].r = (1.0-certainty)*255.0;
-  //leds[0].g = certainty*255.0;
-  //FastLED.show();
+  //set_led((1.0-certainty)*255, certainty*255, 0);
 
   // Do different things depending on where the line is relative to the robot
   switch (get_line_state()) {
@@ -102,13 +101,14 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
 //    override_turn: the direction to turn if the line follower isn't certain on which way to turn
 //    override_bias: the certainty value below which the line follower uses override_turn instead of the turn direction it thinks is correct
 //      (See decide_direction for an explanation of certainty)
+
+// Keep a "memory" of how it's been turning.
+// This is closer to 1.0 if it's been turning right consistently, and closer to -1.0 if it's been turning left consistently
+// The rate at which it updates is defined by TURN_MEMORY_RATE
 float turn_memory = 0.0;
 
 // Follow the line forever (mainly for debug purposes)
 void follow_line_forever(float motor_speed, bool override_turn, float override_bias) {
-  // Keep a "memory" of how it's been turning.
-  // This is closer to 1.0 if it's been turning right consistently, and closer to -1.0 if it's been turning left consistently
-  // The rate at which it updates is defined by TURN_MEMORY_RATE
   while (true) {
     // Do the line follow algorithm
     turn_memory = _follow_line_step(motor_speed, override_turn, override_bias, turn_memory);
@@ -150,41 +150,5 @@ void follow_line_until_near_wall(float motor_speed, bool override_turn, float ov
     }
     
     delay(TURN_PERIOD);
-  }
-}
-
-
-#define LINE_KP 0.003
-#define LINE_KI 0.0
-#define LINE_KD 0.0
-
-// A test implementation of PID to see if it's better
-void follow_line_pid(float motor_speed) {
-  int integral = 0; // for I term, arbitrary units
-  int prev_err = 0; // for D term, arbitrary units
-  unsigned long prev_time = millis(); // for I and D terms
-  while (true) {
-    int err = analogRead(LINE_R) - analogRead(LINE_L) ; // Let error be the difference in reading between left and right
-    unsigned long now = millis();
-    // Update integral
-    integral += (now - prev_time) * err;
-    // Find derivative
-    float derivative = (float)(err - prev_err)/(float)(now - prev_time);
-
-    // The resultant setpoint from PID. Negative means turn left. Range *should* be -1.0 to 1.0
-    float setpoint = LINE_KP*(float)err + LINE_KI*(float)integral + LINE_KD*derivative;
-
-    // Set motor speeds from setpoint
-    if (err > 0.0 ) {
-      set_speeds(motor_speed, motor_speed*(1.0-setpoint));
-    }
-    else {
-      set_speeds(motor_speed*(1.0+setpoint), motor_speed);
-    }
-
-    Serial.print("err: "); Serial.println(err);
-    Serial.print("derivative: "); Serial.println(derivative);
-    Serial.print("integral: "); Serial.println(integral);
-    Serial.print("set: "); Serial.println(setpoint);
   }
 }
