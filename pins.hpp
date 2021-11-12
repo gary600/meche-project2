@@ -1,4 +1,7 @@
-// `pins.hpp`: Pin definitions and associated objects (servo and LED).
+/////////////////////////////////////////////////////////////////////////
+// `pins.hpp`: Pin definitions and associated objects (servo and LED). //
+/////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <Servo.h>
@@ -9,8 +12,7 @@
 #define ULTRASONIC_TRIG 13
 #define ULTRASONIC_ECHO 12
 #define SERVO_PIN 10 // Ultrasonic pan servo
-// extern allows this to be a global variable among different files (global variables are generally bad, but in this case it allows us to use it the same as a regular pin)
-extern Servo ultrasonic_servo;
+extern Servo ultrasonic_servo; // `extern` allows this global variable to be shared among files
 
 // Motor pins: SPEED defines the speed based on PWM, and DIR defines the direction
 #define SPEED_L 6

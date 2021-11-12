@@ -1,4 +1,7 @@
-// `meche-project2.ino`: Main project file, including course routine.
+////////////////////////////////////////////////////////////////////////
+// `meche-project2.ino`: Main project file, including course routine. //
+////////////////////////////////////////////////////////////////////////
+
 // This code was originally based on starter code provided by Elegoo and modifications made by Mark Bedillion
 
 // External libraries

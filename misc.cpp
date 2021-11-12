@@ -1,4 +1,7 @@
-// `misc.cpp`: Miscellaneous functions
+/////////////////////////////////////////
+// `misc.cpp`: Miscellaneous functions //
+/////////////////////////////////////////
+
 #include "misc.hpp"
 
 #include <Arduino.h>

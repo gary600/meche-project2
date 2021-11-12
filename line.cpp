@@ -1,4 +1,7 @@
-// `line.cpp`: Line follower functions. Most of the actual logic is done here.
+/////////////////////////////////////////////////////////////////////////////////
+// `line.cpp`: Line follower functions. Most of the actual logic is done here. //
+/////////////////////////////////////////////////////////////////////////////////
+
 #include "line.hpp"
 
 #include <Arduino.h>
@@ -81,7 +84,7 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
       turn_memory = lerp(turn_memory, 1.0, TURN_MEMORY_RATE);
       break;
     
-    // If the line is lost, decide which way to turn based on turn memory and the direction overidde provided. See _decide_direction()
+    // If the line is lost, decide which way to turn based on turn memory and the direction override provided. See _decide_direction()
     case LINE_STATE_NONE:
       // true == right
       if (_decide_direction(override_turn, override_bias)) {
@@ -104,7 +107,7 @@ float _follow_line_step(float motor_speed, bool override_turn, float override_bi
 //    motor_speed: the "target" motor speed to use in this movement (gets multiplied by various factors throughout)
 //    override_turn: the direction to turn to find a lost line if the line follower isn't certain on which way to turn
 //    override_bias: the certainty value below which the line follower uses override_turn instead of the turn direction it thinks is correct
-//      (See decide_direction for an explanation of certainty)
+//      (See _decide_direction for an explanation of certainty)
 
 // Follow the line forever (mainly for debug purposes)
 void follow_line_forever(float motor_speed, bool override_turn, float override_bias) {

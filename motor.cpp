@@ -1,4 +1,7 @@
-// `motor.cpp`: Motor control functions.
+///////////////////////////////////////////
+// `motor.cpp`: Motor control functions. //
+///////////////////////////////////////////
+
 #include "motor.hpp"
 
 #include <Arduino.h>
