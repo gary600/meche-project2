@@ -65,7 +65,7 @@ void setup() {
 // Most of the functions used here are in `line.cpp`, `motor.cpp`, and `misc.cpp`. See the files for explanations.
 void do_course() {  
   // Start and turn #1, stop at the gate. Bias strongly to turn right so that it doesn't lose the turn at this speed
-  follow_line_until_near_wall(0.9, true, 0.9, 12.0); // any faster than this, it consistently loses the line for some reason
+  follow_line_until_near_wall(0.9, true, 0.9, 10.0); // any faster than this, it consistently loses the line for some reason
   stop_motors();
 
   //DEBUG: Flip the LED between red and blue to show which movement segment it's on for timing purposes
